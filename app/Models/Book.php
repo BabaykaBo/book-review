@@ -81,4 +81,24 @@ class Book extends Model
         ->popular(now()->subMonths(6), now())
         ->minReviews(2);
     }
+
+    public function scopeWithReviewsCount(Builder $q, $from = null, $to = null)
+    {
+        return $q->withCount([
+            'reviews' => fn(Builder $q) => $this->dateRangeFilter($q, $from, $to)
+        ]);
+    }
+
+    public function scopeWithAvgRating(Builder $q, $from = null, $to = null)
+    {
+        return $q->withAvg([
+            'reviews' => fn(Builder $q) => $this->dateRangeFilter($q, $from, $to)
+        ], 'rating');
+    }
+
+    protected static function booted()
+    {
+        static::updated(fn(Book $book) => cache()->forget('book: ' . $book->id));
+        static::deleted(fn(Book $book) => cache()->forget('book: ' . $book->id));
+    }
 }
